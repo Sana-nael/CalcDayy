@@ -1,0 +1,100 @@
+import { PresetScenario } from '../types';
+
+export const PRESET_SCENARIOS: PresetScenario[] = [
+  {
+    id: 'cenario-1',
+    title: 'Cenário 1: Mulher 30a • Emagrecimento',
+    subtitle: '68 kg | 165 cm | Moderadamente Ativa',
+    description: 'Déficit calórico estratégico de 20% com foco na preservação de massa magra e saciedade.',
+    data: {
+      sex: 'female',
+      age: 30,
+      weight: 68,
+      height: 165,
+      activityLevel: 'moderate',
+      goal: 'loss',
+      deficitPercent: 20,
+      surplusPercent: 12,
+      macroPreset: 'high_protein',
+    },
+    expectedTMB: 1400,
+    expectedGET: 2170,
+    expectedMeta: 1736,
+  },
+  {
+    id: 'cenario-2',
+    title: 'Cenário 2: Homem 25a • Ganho Muscular',
+    subtitle: '75 kg | 178 cm | Muito Ativo (Treinos Intensos)',
+    description: 'Superávit limpo de 12% para apoiar hipertrofia sem acúmulo excessivo de tecido adiposo.',
+    data: {
+      sex: 'male',
+      age: 25,
+      weight: 75,
+      height: 178,
+      activityLevel: 'intense',
+      goal: 'gain',
+      deficitPercent: 20,
+      surplusPercent: 12,
+      macroPreset: 'balanced',
+    },
+    expectedTMB: 1743,
+    expectedGET: 3006,
+    expectedMeta: 3367,
+  },
+  {
+    id: 'cenario-3',
+    title: 'Cenário 3: Homem 42a • Manutenção Sedentária',
+    subtitle: '82 kg | 175 cm | Rotina de Escritório',
+    description: 'Balanço isocalórico (100% GET) para estabilização de peso corporal e otimização energética.',
+    data: {
+      sex: 'male',
+      age: 42,
+      weight: 82,
+      height: 175,
+      activityLevel: 'sedentary',
+      goal: 'maintenance',
+      deficitPercent: 20,
+      surplusPercent: 12,
+      macroPreset: 'balanced',
+    },
+    expectedTMB: 1709,
+    expectedGET: 2051,
+    expectedMeta: 2051,
+  },
+];
+
+export const EDUCATIONAL_TOPICS = [
+  {
+    id: 'proteinas',
+    name: 'Proteínas',
+    calPerGram: '4 kcal/g',
+    role: 'Construção & Preservação Muscular',
+    description:
+      'Blocos fundamentais de construção tecidual, enzimas, anticorpos e neurotransmissores. Apresentam o maior efeito térmico dos alimentos (TEF ~20-30%) e promovem alta saciedade.',
+    recommendation: '1.6g a 2.2g por kg de peso corporal para praticantes de atividade física.',
+    sources: ['Ovos e claras', 'Peixes magros e salmão', 'Frango e carnes magras', 'Tofu e leguminosas', 'Whey / Proteína vegetal'],
+    tagColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  },
+  {
+    id: 'carboidratos',
+    name: 'Carboidratos',
+    calPerGram: '4 kcal/g',
+    role: 'Combustível Primário & Performance',
+    description:
+      'Principal substrato energético para o sistema nervoso central e treinos de intensidade. Fornecem glicose e reabastecem estoques de glicogênio muscular e hepático.',
+    recommendation: 'Ajustados conforme volume de treino e objetivo de déficit ou superávit.',
+    sources: ['Aveia e grãos integrais', 'Batata-doce e mandioca', 'Arroz e quinoa', 'Frutas frescas', 'Legumes e hortaliças'],
+    tagColor: 'bg-amber-50 text-amber-800 border-amber-200',
+  },
+  {
+    id: 'gorduras',
+    name: 'Gorduras',
+    calPerGram: '9 kcal/g',
+    role: 'Saúde Hormonal & Absorção Vitamínica',
+    description:
+      'Essenciais para a produção de hormônios esteroides (como testosterona e estrogênio), integridade das membranas celulares e absorção das vitaminas lipossolúveis (A, D, E e K).',
+    recommendation: '0.7g a 1.2g por kg de peso corporal, priorizando fontes mono e poli-insaturadas.',
+    sources: ['Azeite de oliva extravirgem', 'Abacate', 'Castanhas e nozes', 'Sementes de chia e linhaça', 'Peixes gordurosos (ômega-3)'],
+    tagColor: 'bg-stone-100 text-stone-800 border-stone-300',
+  },
+];

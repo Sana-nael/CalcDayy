@@ -1,0 +1,8 @@
+{
+  "name": "Remix Calculadora Day Nutricional \u0026 Metabólica",
+  "description": "Landing page interativa com calculadora de TMB (Mifflin-St Jeor), GET, meta calórica, distribuição de macronutrientes, IMC e hidratação.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
