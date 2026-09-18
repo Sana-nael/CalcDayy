@@ -33,16 +33,41 @@ export const ScenarioPicker: React.FC<ScenarioPickerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         {presets.map((preset, index) => {
           const isSelected = activeId === preset.id;
+          
+          const scenarioStyles = [
+            {
+              borderHover: 'hover:border-emerald-300 hover:bg-emerald-50/30',
+              active: 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/25 shadow-xs',
+              tagColor: 'text-emerald-700 bg-emerald-100/60 border border-emerald-200/80',
+              btnColor: 'text-emerald-700 group-hover:text-emerald-800',
+              iconColor: 'text-emerald-600',
+            },
+            {
+              borderHover: 'hover:border-sky-300 hover:bg-sky-50/30',
+              active: 'bg-sky-50/80 border-sky-500 ring-2 ring-sky-500/25 shadow-xs',
+              tagColor: 'text-sky-700 bg-sky-100/60 border border-sky-200/80',
+              btnColor: 'text-sky-700 group-hover:text-sky-800',
+              iconColor: 'text-sky-600',
+            },
+            {
+              borderHover: 'hover:border-amber-300 hover:bg-amber-50/30',
+              active: 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/25 shadow-xs',
+              tagColor: 'text-amber-700 bg-amber-100/60 border border-amber-200/80',
+              btnColor: 'text-amber-700 group-hover:text-amber-800',
+              iconColor: 'text-amber-600',
+            },
+          ][index % 3];
+
           return (
             <button
               key={preset.id}
               type="button"
               id={`preset-btn-${index + 1}`}
               onClick={() => onSelect(preset)}
-              className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group ${
+              className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between group cursor-pointer ${
                 isSelected
-                  ? 'bg-[#EFF2EA] border-[#4A5D4E] ring-2 ring-[#4A5D4E]/20 shadow-xs'
-                  : 'bg-[#FDFCFB] border-[#E8E6E1] hover:bg-[#F5F3EF] hover:border-[#D0CDC5]'
+                  ? scenarioStyles.active
+                  : `bg-[#FDFCFB] border-[#E8E6E1] ${scenarioStyles.borderHover}`
               }`}
             >
               <div>
@@ -51,10 +76,10 @@ export const ScenarioPicker: React.FC<ScenarioPickerProps> = ({
                     {preset.title}
                   </span>
                   {isSelected && (
-                    <CheckCircle className="w-4 h-4 text-[#4A5D4E] shrink-0" />
+                    <CheckCircle className={`w-4 h-4 ${scenarioStyles.iconColor} shrink-0`} />
                   )}
                 </div>
-                <div className="text-[11px] font-semibold text-[#4A5D4E] mb-1">
+                <div className={`text-[11px] font-bold px-2 py-0.5 rounded-md inline-block mb-1.5 ${scenarioStyles.tagColor}`}>
                   {preset.subtitle}
                 </div>
                 <p className="text-xs text-[#676F68] leading-normal line-clamp-2">
@@ -64,7 +89,7 @@ export const ScenarioPicker: React.FC<ScenarioPickerProps> = ({
 
               <div className="mt-3 pt-2.5 border-t border-[#E8E6E1] flex items-center justify-between text-[11px] font-mono text-[#555C56]">
                 <span>TMB: ~{preset.expectedTMB} kcal</span>
-                <span className="flex items-center gap-1 font-bold text-[#4A5D4E] group-hover:translate-x-0.5 transition-transform">
+                <span className={`flex items-center gap-1 font-bold ${scenarioStyles.btnColor} group-hover:translate-x-0.5 transition-transform`}>
                   Aplicar <ArrowRight className="w-3 h-3" />
                 </span>
               </div>

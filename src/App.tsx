@@ -1,15 +1,28 @@
-import React, { useState, useMemo } from 'react';
-import { UserInputData, PresetScenario, MacroDistributionType } from './types';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  UserInputData,
+  PresetScenario,
+  MacroDistributionType,
+  LeadData,
+  ProfessionalConfig,
+  MethodologyConfig,
+} from './types';
 import { calculateMetabolism, validateInputs } from './utils/calculator';
 import { PRESET_SCENARIOS } from './data/presets';
+import { ConfigService } from './services/configService';
+import { analytics } from './services/analyticsService';
+import { getUTMParams } from './utils/utm';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ScenarioPicker } from './components/ScenarioPicker';
 import { CalculatorForm } from './components/CalculatorForm';
 import { ResultsView } from './components/ResultsView';
+import { LeadCaptureGate } from './components/LeadCaptureGate';
+import { MetabolicReportModal } from './components/MetabolicReportModal';
+import { AdminPanel } from './components/admin/AdminPanel';
 import { EducationalGuide } from './components/EducationalGuide';
 import { Footer } from './components/Footer';
-import { Calculator, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const INITIAL_STATE: UserInputData = {
   sex: 'female',
@@ -38,6 +51,32 @@ const BLANK_STATE: UserInputData = {
 export default function App() {
   const [formData, setFormData] = useState<UserInputData>(INITIAL_STATE);
   const [activePresetId, setActivePresetId] = useState<string | undefined>('cenario-1');
+  const [professionalConfig, setProfessionalConfig] = useState<ProfessionalConfig>(() =>
+    ConfigService.getProfessionalConfig()
+  );
+  const [methodologyConfig, setMethodologyConfig] = useState<MethodologyConfig>(() =>
+    ConfigService.getMethodologyConfig()
+  );
+  const [lead, setLead] = useState<LeadData | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+
+  const hasTrackedStart = useRef(false);
+  const hasTrackedComplete = useRef(false);
+
+  // Rastreia chegada do visitante e verifica URL para rota de admin
+  useEffect(() => {
+    analytics.track('visitor_arrived', {
+      utm: getUTMParams(),
+    });
+
+    if (
+      window.location.search.includes('admin=true') ||
+      window.location.hash.includes('admin')
+    ) {
+      setShowAdmin(true);
+    }
+  }, []);
 
   // Validação dinâmica dos campos
   const validationErrors = useMemo(() => {
@@ -46,12 +85,31 @@ export default function App() {
 
   const hasErrors = Object.keys(validationErrors).length > 0;
 
-  // Cálculo metabólico em tempo real
+  // Cálculo metabólico em tempo real com metodologia personalizada
   const results = useMemo(() => {
-    return calculateMetabolism(formData);
-  }, [formData]);
+    return calculateMetabolism(formData, methodologyConfig);
+  }, [formData, methodologyConfig]);
+
+  // Rastreia cálculo concluído
+  useEffect(() => {
+    if (results && !hasErrors && !hasTrackedComplete.current) {
+      hasTrackedComplete.current = true;
+      analytics.track('calculator_completed', {
+        goal: formData.goal,
+        tmb: results.tmb,
+        get: results.get,
+      });
+    }
+  }, [results, hasErrors, formData.goal]);
 
   const handleFieldChange = (field: keyof UserInputData, value: any) => {
+    if (!hasTrackedStart.current) {
+      hasTrackedStart.current = true;
+      analytics.track('calculator_started', {
+        field,
+      });
+    }
+
     setActivePresetId(undefined); // Remove vínculo direto de preset ao alterar manualmente
     setFormData((prev) => ({
       ...prev,
@@ -67,6 +125,13 @@ export default function App() {
   };
 
   const handleSelectPreset = (preset: PresetScenario) => {
+    if (!hasTrackedStart.current) {
+      hasTrackedStart.current = true;
+      analytics.track('calculator_started', {
+        preset: preset.id,
+      });
+    }
+
     setFormData({ ...preset.data });
     setActivePresetId(preset.id);
   };
@@ -74,20 +139,43 @@ export default function App() {
   const handleReset = () => {
     setFormData(BLANK_STATE);
     setActivePresetId(undefined);
+    setLead(null);
+    hasTrackedComplete.current = false;
   };
+
+  const handleLeadCaptured = (capturedLead: LeadData) => {
+    setLead(capturedLead);
+  };
+
+  const handleCloseAdmin = () => {
+    setShowAdmin(false);
+    // Recarrega configs atualizadas
+    setProfessionalConfig(ConfigService.getProfessionalConfig());
+    setMethodologyConfig(ConfigService.getMethodologyConfig());
+  };
+
+  // Se o modo admin estiver aberto, renderiza o Painel de Controle
+  if (showAdmin) {
+    return <AdminPanel onBackToApp={handleCloseAdmin} />;
+  }
+
+  // Verifica se o resultado completo está desbloqueado
+  const isUnlocked = !professionalConfig.leadCaptureEnabled || lead !== null;
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D312E] flex flex-col font-sans selection:bg-[#4A5D4E] selection:text-white">
       {/* Header */}
       <Header
+        config={professionalConfig}
         presets={PRESET_SCENARIOS}
         activePresetId={activePresetId}
         onSelectPreset={handleSelectPreset}
         onReset={handleReset}
+        onOpenAdmin={() => setShowAdmin(true)}
       />
 
       {/* Hero Section */}
-      <Hero />
+      <Hero config={professionalConfig} />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -122,14 +210,28 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Column: Real-Time Results (7 cols on lg) */}
+          {/* Right Column: Interactive Diagnostic Gate or Full Results (7 cols on lg) */}
           <div className="lg:col-span-7">
             {results && !hasErrors ? (
-              <ResultsView
-                results={results}
-                userInput={formData}
-                onMacroPresetChange={handleMacroPresetChange}
-              />
+              isUnlocked ? (
+                /* Resultado Completo Desbloqueado */
+                <ResultsView
+                  results={results}
+                  userInput={formData}
+                  config={professionalConfig}
+                  lead={lead}
+                  onMacroPresetChange={handleMacroPresetChange}
+                  onOpenReportModal={() => setIsReportOpen(true)}
+                />
+              ) : (
+                /* Portão de Captura de Lead com Prévia Atraente */
+                <LeadCaptureGate
+                  config={professionalConfig}
+                  results={results}
+                  userInput={formData}
+                  onLeadCaptured={handleLeadCaptured}
+                />
+              )
             ) : (
               /* Fallback / Incomplete Form State */
               <div className="p-8 sm:p-12 rounded-3xl bg-[#F5F3EF] border border-[#E8E6E1] text-center flex flex-col items-center justify-center min-h-[450px]">
@@ -147,7 +249,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleSelectPreset(PRESET_SCENARIOS[0])}
-                    className="px-4 py-2.5 rounded-xl bg-[#4A5D4E] hover:bg-[#3E4E42] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-[#4A5D4E] hover:bg-[#3E4E42] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-all cursor-pointer"
                   >
                     Carregar Exemplo Pré-configurado
                   </button>
@@ -162,7 +264,19 @@ export default function App() {
       <EducationalGuide />
 
       {/* Footer with Legal & Medical Disclaimer */}
-      <Footer />
+      <Footer config={professionalConfig} />
+
+      {/* Personalized Printable Report Modal */}
+      {results && (
+        <MetabolicReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          config={professionalConfig}
+          results={results}
+          userInput={formData}
+          lead={lead}
+        />
+      )}
     </div>
   );
 }

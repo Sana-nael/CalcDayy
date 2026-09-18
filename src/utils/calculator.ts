@@ -5,6 +5,7 @@ import {
   ActivityLevel,
   MacroDistributionType,
   ImcData,
+  MethodologyConfig,
 } from '../types';
 
 export const ACTIVITY_FACTORS: Record<
@@ -174,7 +175,10 @@ export function calculateImc(weightKg: number, heightCm: number): ImcData {
 /**
  * Realiza os cálculos metabólicos completos
  */
-export function calculateMetabolism(data: UserInputData): CalculationResults | null {
+export function calculateMetabolism(
+  data: UserInputData,
+  methodology?: MethodologyConfig
+): CalculationResults | null {
   const errors = validateInputs(data);
   if (Object.keys(errors).length > 0) {
     return null;
@@ -187,7 +191,7 @@ export function calculateMetabolism(data: UserInputData): CalculationResults | n
   // 1. TMB - Mifflin-St Jeor
   // Feminino: (10 × peso kg) + (6.25 × altura cm) - (5 × idade) - 161
   // Masculino: (10 × peso kg) + (6.25 × altura cm) - (5 × idade) + 5
-  let tmbRaw = (10 * weight) + (6.25 * height) - (5 * age);
+  let tmbRaw = 10 * weight + 6.25 * height - 5 * age;
   if (data.sex === 'female') {
     tmbRaw -= 161;
   } else {
@@ -196,7 +200,8 @@ export function calculateMetabolism(data: UserInputData): CalculationResults | n
   const tmb = Math.round(tmbRaw);
 
   // 2. GET = TMB × fator de atividade
-  const activityConfig = ACTIVITY_FACTORS[data.activityLevel];
+  const activityFactors = methodology?.activityFactors || ACTIVITY_FACTORS;
+  const activityConfig = activityFactors[data.activityLevel] || ACTIVITY_FACTORS[data.activityLevel];
   const activityMultiplier = activityConfig.factor;
   const getRaw = tmbRaw * activityMultiplier;
   const get = Math.round(getRaw);
@@ -206,12 +211,15 @@ export function calculateMetabolism(data: UserInputData): CalculationResults | n
   let calorieDelta = 0;
   let calorieDeltaPercent = 0;
 
+  const defaultDeficit = methodology?.defaultDeficitPercent || 20;
+  const defaultSurplus = methodology?.defaultSurplusPercent || 12;
+
   if (data.goal === 'loss') {
-    calorieDeltaPercent = -Math.abs(data.deficitPercent || 20);
+    calorieDeltaPercent = -Math.abs(data.deficitPercent || defaultDeficit);
     calorieDelta = Math.round(get * (calorieDeltaPercent / 100));
     targetCalories = Math.max(1000, get + calorieDelta);
   } else if (data.goal === 'gain') {
-    calorieDeltaPercent = Math.abs(data.surplusPercent || 12);
+    calorieDeltaPercent = Math.abs(data.surplusPercent || defaultSurplus);
     calorieDelta = Math.round(get * (calorieDeltaPercent / 100));
     targetCalories = get + calorieDelta;
   } else {
@@ -224,14 +232,36 @@ export function calculateMetabolism(data: UserInputData): CalculationResults | n
   // 4. IMC
   const imc = calculateImc(weight, height);
 
-  // 5. Hidratação estimada: 35 ml x peso kg
-  const hydrationMl = Math.round(35 * weight);
+  // 5. Hidratação estimada: (ml/kg configurado) x peso kg
+  const hydrationFactor = methodology?.hydrationMlPerKg || 35;
+  const hydrationMl = Math.round(hydrationFactor * weight);
   const hydrationLiters = Math.round((hydrationMl / 1000) * 10) / 10;
   const hydrationGlasses = Math.round(hydrationMl / 250);
 
   // 6. Macronutrientes
-  // Ajuste do preset dependendo do objetivo caso não especificado
-  const presetConfig = MACRO_PRESET_CONFIGS[data.macroPreset] || MACRO_PRESET_CONFIGS.balanced;
+  let presetConfig = MACRO_PRESET_CONFIGS[data.macroPreset] || MACRO_PRESET_CONFIGS.balanced;
+
+  if (methodology) {
+    if (data.macroPreset === 'balanced' && methodology.macroBalanced) {
+      presetConfig = {
+        name: 'Equilibrada',
+        description: 'Distribuição clássica e sustentável para o dia a dia',
+        ...methodology.macroBalanced,
+      };
+    } else if (data.macroPreset === 'high_protein' && methodology.macroHighProtein) {
+      presetConfig = {
+        name: 'Hiperproteica',
+        description: 'Prioriza saciedade, queima de gordura e síntese proteica',
+        ...methodology.macroHighProtein,
+      };
+    } else if (data.macroPreset === 'moderate_carb' && methodology.macroModerateCarb) {
+      presetConfig = {
+        name: 'Low Carb Moderada',
+        description: 'Maior proporção de lipídios saudáveis e controle glicêmico',
+        ...methodology.macroModerateCarb,
+      };
+    }
+  }
 
   // Calculamos os gramas baseados nos percentuais
   const targetProtCalories = targetCalories * presetConfig.pRatio;

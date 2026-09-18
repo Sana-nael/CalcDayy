@@ -1,7 +1,12 @@
 import React from 'react';
-import { ShieldAlert, BookOpen, HeartHandshake } from 'lucide-react';
+import { ShieldAlert, BookOpen, HeartHandshake, Instagram, Globe, Phone } from 'lucide-react';
+import { ProfessionalConfig } from '../types';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  config: ProfessionalConfig;
+}
+
+export const Footer: React.FC<FooterProps> = ({ config }) => {
   return (
     <footer className="w-full border-t border-[#E8E6E1] bg-[#F5F3EF] text-[#555C56] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -16,13 +21,14 @@ export const Footer: React.FC = () => {
                 Aviso Legal & Isenção de Responsabilidade Médica
               </h4>
               <p className="text-xs sm:text-sm text-[#676F68] leading-relaxed">
-                As informações, cálculos, taxas metabólicas e divisões de macronutrientes fornecidas por esta ferramenta têm finalidade estritamente educativa e informativa. Elas baseiam-se em modelos preditivos matemáticos populacionais (como a equação de Mifflin-St Jeor) e <strong>não constituem prescrição dietética, diagnóstico médico ou orientação terapêutica individualizada</strong>. Qualquer alteração drástica em seus hábitos alimentares ou rotina de exercícios físicos deve ser precedida de avaliação clínica e acompanhamento de profissionais habilitados (Nutricionista e Médico).
+                {config.disclaimer ||
+                  'As informações, cálculos, taxas metabólicas e divisões de macronutrientes fornecidas por esta ferramenta têm finalidade estritamente educativa e informativa. Elas baseiam-se em modelos preditivos matemáticos populacionais (como a equação de Mifflin-St Jeor) e não constituem prescrição dietética ou diagnóstico médico.'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* References & Credits */}
+        {/* References, Professional Info & Credits */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-xs text-[#676F68]">
           <div>
             <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4A5D4E] mb-2">
@@ -37,16 +43,21 @@ export const Footer: React.FC = () => {
           <div className="md:text-right flex flex-col md:items-end justify-between">
             <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#4A5D4E] mb-2">
               <HeartHandshake className="w-3.5 h-3.5" />
-              Ciência & Tecnologia
+              Acompanhamento Profissional
             </div>
-            <p>
-              Calculadora Nutricional & Metabólica Interativa • Construída com React, TypeScript & Tailwind CSS.
+            <p className="font-semibold text-[#2D312E]">
+              {config.professionalName} {config.professionalRegistration && `• ${config.professionalRegistration}`}
             </p>
+            <div className="flex flex-wrap items-center gap-3 mt-1 text-[#4A5D4E]">
+              {config.instagram && <span>{config.instagram}</span>}
+              {config.website && <span>{config.website.replace('https://', '')}</span>}
+              {config.whatsapp && <span>WhatsApp: +{config.whatsapp}</span>}
+            </div>
           </div>
         </div>
 
         <div className="mt-8 pt-6 border-t border-[#E8E6E1] text-center text-xs text-[#8A928B]">
-          © {new Date().getFullYear()} Metabólica. Todos os direitos reservados. Fórmulas matemáticas validadas para propósitos didáticos e de planejamento.
+          © {new Date().getFullYear()} {config.brandName || 'Metabólica'}. Todos os direitos reservados. Fórmulas matemáticas validadas para propósitos didáticos e de planejamento.
         </div>
       </div>
     </footer>
